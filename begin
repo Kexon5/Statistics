@@ -1,0 +1,12 @@
+import lab1 as l1
+import lab2 as l2
+import lab3 as l3
+import lab4 as l4
+
+l1.lab1_run()
+l2.lab2_run()
+l3.lab3_run()
+l4.lab4_run()
+
+
+
