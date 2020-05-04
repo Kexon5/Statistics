@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats as stats
 from tabulate import tabulate
 
-N = 10
+N = 100
 
 
 def lab7_run():
