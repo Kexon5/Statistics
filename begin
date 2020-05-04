@@ -2,11 +2,23 @@ import lab1 as l1
 import lab2 as l2
 import lab3 as l3
 import lab4 as l4
+import lab5 as l5
+import lab6 as l6
+import lab7 as l7
+import lab8 as l8
 
 l1.lab1_run()
 l2.lab2_run()
 l3.lab3_run()
 l4.lab4_run()
+l5.lab5_run()
+l6.lab6_run()
+l7.lab7_run()
+l8.lab8_run()
+
+
+
+
 
 
 
