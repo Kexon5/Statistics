@@ -48,7 +48,7 @@ def lab7_run():
              np.around(count_el[i] - N * probability[i], decimals=2), np.around(res[i], decimals=2)])
     rows.append(['itog', "-", np.sum(count_el), np.around(np.sum(probability), decimals=4),
                  np.around(np.sum(N * probability), decimals=2),
-                 -np.around(np.sum(count_el - 100 * probability), decimals=2),
+                 -np.around(np.sum(count_el - N * probability), decimals=2),
                  np.around(np.sum(res), decimals=2)])
     print(tabulate(rows, headers, tablefmt="latex"))
     print('\n')
