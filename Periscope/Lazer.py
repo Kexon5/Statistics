@@ -21,139 +21,79 @@ class Lazer:
         self.sc = screen
         self.cyl = cyl
 
-    def seek_normal(self, vect1, vect2):
-        x = vect1[1] * (vect2[2] - vect1[2]) - (vect2[1] - vect1[1]) * vect1
-        y = -(vect1[0] * (vect2[2] - vect1[2]) -
-              (vect2[0] - vect1[0]) * vect1[2])
-        z = vect1[0] * (vect2[1] - vect1[1]) - \
-            (vect2[0] - vect1[0]) * vect1[1]
+    def dot_cyl(self):
+        vector = [self.cyl.bias[0] - self.points[len(self.mir)][0],
+                  self.cyl.bias[1] - self.points[len(self.mir)][1],
+                  self.cyl.bias[2] - self.points[len(self.mir)][2]]
+        l = (vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2) ** 0.5
+        for i in range(3):
+            vector[i] /= l
 
-    def vect_cent(self, vect1, vect2):
-        return [(vect1[0] + vect2[0]) / 2, (vect1[1] + vect2[1]) / 2, (vect1[2] + vect2[2]) / 2]
+        self.mir[len(self.mir) - 1].rot_vect(vector, -0.5)
+        self.dot_point(len(self.mir) - 1, flag=False)
+        t = -self.points[len(self.mir)][0] / self.d[len(self.mir)][0]
+        point = [self.d[len(self.mir)][0] * t + self.points[len(self.mir)][0],
+                 self.d[len(self.mir)][1] * t + self.points[len(self.mir)][1],
+                 self.d[len(self.mir)][2] * t + self.points[len(self.mir)][2]]
+        self.points[len(self.mir) + 1] = point
 
-    def delta_vec(self, vect1, vect2):
-        return self.normal_vect([0, 0, 0], [vect2[0] - vect1[0], vect2[1] - vect1[1], vect2[2] - vect1[2]])
-
-    def normal_vect(self, point1, point2):
-        d = [point2[0] - point1[0],
-             point2[1] - point1[1],
-             point2[2] - point1[2]]
-        normalize = (d[0] ** 2 + d[1] ** 2 + d[2] ** 2) ** 0.5
-        d = [d[0] / normalize, d[1] / normalize, d[2] / normalize]
-        print(normalize)
-        return d
-
-    def edit_rot(self, points, index):
-        d = self.normal_vect(self.points[index + 1], points)
-        rot1, rot2, rot3 = (math.acos(d[0]) - math.acos(self.d[index + 1][0])) / 2, \
-                           (math.acos(d[1]) - math.acos(self.d[index + 1][1])) / 2, \
-                           (math.acos(d[2]) - math.acos(self.d[index + 1][2])) / 2
-        '''rotX = math.acos(d[0])
-        rotY = math.acos(d[1]) + math.pi / 2
-        rotZ = math.acos(d[2])
-        self.mir[index].rot_set(rotX, rotY, rotZ, rebuild=False)'''
-        self.mir[1].rot(rotY=-rot1, rotX=-rot2, rebuild=False)
-
-    def process_cyl(self):
-        points, k_max = self.cyl.getCentersAndCoef()
-        d = self.normal_vect(self.points[2], points[0])
-        coef_acc = 0.7
-        length = points[0][0] - points[1][0]
-        self.d[2] = self.mir[1].create_new_k(self.d[1])
-        # k = abs(length / self.d[len(self.d) - 1][0])
-        if abs(d[1]) < coef_acc * k_max[1] and abs(d[2]) < coef_acc * k_max[2]:
-            while abs(self.d[2][1]) >= coef_acc * k_max[1]:
-                sign = self.d[2][1] / abs(self.d[2][1])
-                self.mir[1].rot(rotZ=sign * 0.05)
-                self.d[2] = self.mir[1].create_new_k(self.d[1])
-
-            while abs(self.d[2][2]) >= coef_acc * k_max[2]:
-                sign = self.d[2][2] / abs(self.d[2][2])
-                self.mir[1].rot(rotY=sign * 0.05)
-                self.d[2] = self.mir[1].create_new_k(self.d[1])
-
-            self.points[3] = [points[0][0] + self.d[len(self.d) - 1][0] * length,
-                              points[0][1] + self.d[len(self.d) - 1][1] * length,
-                              points[0][2] + self.d[len(self.d) - 1][2] * length]
-        else:
-            x = abs(points[0][0] - self.points[2][0])
-            k = 0
-            while abs(d[1]) < 2 * coef_acc * k_max[1] and abs(d[2]) < 2 * coef_acc * k_max[2]:
-                d = self.normal_vect(self.points[2] + k * self.d[1], points[0])
-            #self.mir[1].bias[0] += self.d[1][0] * x / length
-            #self.mir[1].bias[1] += self.d[1][1] * x / length
-            #self.mir[1].bias[2] += self.d[1][2] * x / length
-            if abs(d[1]) >= coef_acc * k_max[1]:
-                delta_y = self.d[2][1] * length
-                self.mir[1].bias[1] += delta_y * x / length
-            #delta_z = self.d[2][2] * length
-            #self.mir[1].bias[2] += -delta_z * x / length
-
-            self.points[2] = self.mir[1].bias.copy()
-            #self.edit_rot(self.points[2], 0)
-            self.d[2] = self.mir[1].create_new_k(self.d[1])
-            self.mir[1].do_bias()
-            self.points[3] = [points[0][0] + self.d[len(self.d) - 1][0] * length,
-                              points[0][1] + self.d[len(self.d) - 1][1] * length,
-                              points[0][2] + self.d[len(self.d) - 1][2] * length]
-            self.process_cyl()
-        '''coef_acc = 0.7
-        points, k_max = self.cyl.getCentersAndCoef()
-        length = points[0][0] - points[1][0]
-        d = self.normal_vect(self.points[2], points[0])
-        if abs(d[1]) < coef_acc * k_max[1] and abs(d[2]) < coef_acc * k_max[2]:
-            self.edit_rot(points[0], 1)
-            self.mir[1].dot_mirror(self.points[2], move=False)
-            self.d[2] = self.mir[1].create_new_k(self.d[1])
-            self.points[len(self.mir) + 1] = [points[0][0] + self.d[len(self.d) - 1][0] * length,
-                                              points[0][1] + self.d[len(self.d) - 1][1] * length,
-                                              points[0][2] + self.d[len(self.d) - 1][2] * length]
-        else:
-            x = abs(points[0][0] - self.points[2][0])
-
-
-            self.dot(index=1)'''
+    def dot_point(self, index, flag=True):
+        t = self.mir[index].find_point_plane(self.d[index], self.points[index])
+        point = [self.d[index][0] * t + self.points[index][0],
+                 self.d[index][1] * t + self.points[index][1],
+                 self.d[index][2] * t + self.points[index][2]]
+        if self.mir[index].dot_mirror(point):
+            self.points[index + 1] = point
+            self.d[index + 1] = self.mir[index].create_new_k(self.d[index])
+            if flag:
+                if index + 1 < len(self.mir):
+                    self.dot(index=index + 1)
+                else:
+                    self.dot_cyl()
 
     def dot(self, index=0):
-        t = self.mir[index].find_point_plane(self.d[index], self.points[index])
-        self.points[index + 1] = [self.d[index][0] * t + self.points[index][0],
-                                  self.d[index][1] * t + self.points[index][1],
-                                  self.d[index][2] * t + self.points[index][2]]
-        '''if self.mir[index].dot_mirror(self.points[index + 1]):
-            self.d.append(self.mir[index].create_new_k(self.d[index]))
-            if index + 1 < len(self.mir):
-                self.dot(index=index + 1)
-            else:
-                self.points.append([int(self.d[index + 1][0] * 100 + self.points[index + 1][0]),
-                                    int(self.d[index + 1][1] * 100 + self.points[index + 1][1]),
-                                    int(self.d[index + 1][2] * 100 + self.points[index + 1][2])])
-
-            self.mir[index].set_rebuild_lazer(False)'''
-        self.mir[index].dot_mirror(self.points[index + 1])
-        self.d[index + 1] = self.mir[index].create_new_k(self.d[index])
-        if index + 1 < len(self.mir):
-            self.dot(index=index + 1)
-        else:
-            self.process_cyl()
-
-        self.mir[index].set_rebuild_lazer(False)
-
-    def delete(self, index=0):
-        r = len(self.d)
-        for i in range(r - 1, index, -1):
-            self.d.remove(self.d[i])
-        r = len(self.points)
-        for i in range(r - 1, index, -1):
-            self.points.remove(self.points[i])
+        if index != 0:
+            vector = [self.mir[index].bias[0] - self.points[index][0],
+                      self.mir[index].bias[1] - self.points[index][1],
+                      self.mir[index].bias[2] - self.points[index][2]]
+            l = (vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2) ** 0.5
+            for i in range(3):
+                vector[i] /= l
+            self.mir[index-1].rot_vect(vector, 0.5)
+            self.dot_point(index - 1, flag=False)
+            self.mir[index].rot_vect(self.d[index], 1.0)
+        self.dot_point(index)
 
     def draw(self, color=RED):
-        for i in range(len(self.mir)):
-            if self.mir[i].rebuildLazer:
-                self.dot(index=i)
-                for j in range(i, len(self.mir)):
-                    self.mir[j].set_rebuild_lazer(False)
         for i in range(len(self.points) - 1):
             pygame.draw.line(self.sc, color, [self.points[i][0] + math.cos(math.pi / 4) * self.points[i][2],
                                               self.points[i][1] + math.cos(math.pi / 4) * self.points[i][2]],
                              [self.points[i + 1][0] + math.cos(math.pi / 4) * self.points[i + 1][2],
                               self.points[i + 1][1] + math.cos(math.pi / 4) * self.points[i + 1][2]], 1)
+
+    def rebuild_lazer(self):
+        centers, coef = self.cyl.getCentersAndCoef()
+        vector = [self.cyl.bias[0] - self.points[len(self.mir)][0],
+                  self.cyl.bias[1] - self.points[len(self.mir)][1],
+                  self.cyl.bias[2] - self.points[len(self.mir)][2]]
+        l = (vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2) ** 0.5
+        for i in range(3):
+            vector[i] /= l
+        if abs(vector[0]) < coef[0] and abs(vector[1]) < coef[1] and abs(vector[0]) < coef[0]:
+            self.mir[len(self.mir) - 1].rot_vect(vector, -0.5, vector2=self.d[len(self.mir)])
+            self.dot_point(len(self.mir) - 1, flag=False)
+            t = -self.points[len(self.mir)][0] / self.d[len(self.mir)][0]
+            point = [self.d[len(self.mir)][0] * t + self.points[len(self.mir)][0],
+                     self.d[len(self.mir)][1] * t + self.points[len(self.mir)][1],
+                     self.d[len(self.mir)][2] * t + self.points[len(self.mir)][2]]
+            self.points[len(self.mir) + 1] = point
+        else:
+            if vector[1] > 0.5 * coef[1]:
+                self.cyl.bias[1] -= 5
+            elif vector[1] < -0.5 * coef[1]:
+                self.cyl.bias[1] += 5
+
+            if vector[2] > 0.5 * coef[2]:
+                self.cyl.bias[2] -= 5
+            elif vector[2] < -0.5 * coef[2]:
+                self.cyl.bias[2] += 5
